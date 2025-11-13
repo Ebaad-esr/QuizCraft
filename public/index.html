@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to QuizMaster Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            transition: all .3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="text-center">
+        <h1 class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text mb-4">QuizMaster Pro</h1>
+        <p class="text-gray-300 text-lg mb-12">The ultimate platform for live, interactive quizzes.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+        <a href="/player" class="glass-card hover:border-purple-500 text-center no-underline">
+            <h2 class="text-3xl font-bold mb-2">Join as Player</h2>
+            <p class="text-gray-300">Ready to test your knowledge? Jump into a quiz now!</p>
+        </a>
+        <a href="/host" class="glass-card hover:border-blue-500 text-center no-underline">
+            <h2 class="text-3xl font-bold mb-2">Login as Host</h2>
+            <p class="text-gray-300">Create, manage, and launch your own quizzes.</p>
+        </a>
+    </div>
+</body>
+</html>
