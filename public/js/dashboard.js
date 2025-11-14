@@ -7,6 +7,7 @@ const ui = {
     backToListBtn: document.getElementById("back-to-list-btn"),
     statusDisplay: document.getElementById("status-display"),
     playersDisplay: document.getElementById("players-display"),
+    joinCodeDisplay: document.getElementById("join-code-display"), // <-- ADDED
     questionsCount: document.getElementById("questions-count-display"),
     startBtn: document.getElementById("start-btn"),
     endBtn: document.getElementById("end-btn"),
@@ -33,7 +34,7 @@ async function api(endpoint, body) {
     }
     const response = await fetch(`/api/host/${endpoint}`, {
         method: "POST",
-        headers: headers,
+        headers: headers, // <-- This is the fix
         body: JSON.stringify(body)
     });
     return await response.json();
@@ -64,7 +65,6 @@ async function showQuizList() {
 async function showQuizDetail(quizId, quizName) {
     currentQuizId = quizId;
     ui.quizDetailTitle.textContent = quizName;
-    // ** BUG FIX **: Store quizId in dataset for the download button
     ui.resultsBtn.dataset.quizId = quizId; 
     showView("quizDetailView");
     await refreshQuizDetail();
@@ -76,10 +76,12 @@ async function refreshQuizDetail() {
     if (!hostToken || currentQuizId === null) return;
     const result = await api("quiz-details", { quizId: currentQuizId });
     if (result.success) {
-        const { status, playerCount, questions } = result.details;
+        const { status, playerCount, questions, joinCode } // <-- ADDED joinCode
+ = result.details;
         ui.statusDisplay.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         ui.playersDisplay.textContent = playerCount;
         ui.questionsCount.textContent = questions.length;
+        ui.joinCodeDisplay.textContent = joinCode || "-"; // <-- ADDED
         ui.startBtn.disabled = status === "active";
         ui.endBtn.disabled = status !== "active";
         ui.questionsTable.innerHTML = questions.map(q => `
@@ -142,7 +144,6 @@ ui.endBtn.addEventListener("click", async () => {
     refreshQuizDetail();
 });
 
-// ** BUG FIX **: New event listener for the download button
 ui.resultsBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     const quizId = ui.resultsBtn.dataset.quizId;
@@ -155,7 +156,7 @@ ui.resultsBtn.addEventListener('click', async (e) => {
 
     if (response.ok) {
         const blob = await response.blob();
-        const filename = `quiz_${quizId}_results.csv`;
+        const filename = `quiz_${quizId}_results_detailed.csv`;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.style.display = 'none';
