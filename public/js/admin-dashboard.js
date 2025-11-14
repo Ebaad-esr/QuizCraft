@@ -7,7 +7,7 @@ async function api(endpoint, body) {
     }
     const response = await fetch(`/api/admin/${endpoint}`, {
         method: "POST",
-        headers: headers,
+        headers: headers, // <-- This is the fix
         body: JSON.stringify(body)
     });
     return await response.json();
