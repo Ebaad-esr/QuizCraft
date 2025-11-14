@@ -31,7 +31,6 @@ function showPage(pageId) {
     document.getElementById(pageId).classList.remove("hide");
 }
 
-// ** UPDATED JOIN FORM LISTENER **
 document.getElementById("join-form").addEventListener("submit", e => {
     e.preventDefault();
     const name = document.getElementById("name-input").value.trim();
@@ -46,7 +45,7 @@ document.getElementById("join-form").addEventListener("submit", e => {
 
 ui.nextQuestionBtn.addEventListener("click", () => socket.emit("requestNextQuestion"));
 
-// ** NOTE: The 'joined' event is no longer used by the server **
+// This event is now used again for the lobby
 socket.on("joined", ({ name }) => {
     ui.welcomeMessage.textContent = `Welcome, ${name}!`;
     showPage("waiting-page");
@@ -54,9 +53,6 @@ socket.on("joined", ({ name }) => {
 
 socket.on("quizState", state => {
     ui.quizTitle.textContent = state.quizName || "QuizMaster Pro";
-    if (state.status === "active") {
-        // This message is no longer accurate, but we'll leave it
-    }
 });
 
 socket.on("playerCount", count => {
@@ -68,6 +64,7 @@ socket.on("error", ({ message }) => {
     ui.joinError.classList.remove("hide");
 });
 
+// This event now fires when the host clicks "Launch Quiz"
 socket.on("quizStarted", state => {
     ui.quizTitle.textContent = state.quizName;
     showPage("quiz-page");
@@ -138,9 +135,8 @@ socket.on("quizFinished", ({ score }) => {
     showPage("finished-page");
 });
 
-// ** UPDATED - TIMER NO LONGER CLEARED **
 function submitAnswer(optionIndex) {
-    // clearInterval(timerInterval); // <-- This line is removed
+    // Timer keeps running
     ui.optionsContainer.querySelectorAll("button").forEach(btn => btn.disabled = true);
     socket.emit("submitAnswer", { optionIndex });
 }
