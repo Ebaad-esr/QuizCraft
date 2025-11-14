@@ -74,13 +74,15 @@
                 <h2 class="text-3xl font-bold mt-2">Join a Quiz</h2>
             </div>
             <p id="join-error" class="bg-red-500/80 text-white text-center p-2 rounded-md mb-4 hide"></p>
+            
             <form id="join-form">
                 <input id="name-input" placeholder="Your Name *" class="auth-input mb-4" required>
+                <input id="joincode-input" placeholder="Join Code *" class="auth-input mb-4" required style="text-transform: uppercase;">
                 <input id="branch-input" placeholder="Branch" class="auth-input mb-4">
                 <input id="year-input" placeholder="Year" class="auth-input mb-6">
                 <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg">Join Quiz</button>
             </form>
-        </div>
+            </div>
     </div>
     <div id="waiting-page" class="hide text-center">
         <h1 id="welcome-message" class="text-4xl font-bold mb-4">Welcome!</h1>
