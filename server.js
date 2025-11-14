@@ -90,7 +90,7 @@ function getHostDb(hostId) {
         CREATE TABLE IF NOT EXISTS quizzes (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             name TEXT NOT NULL, 
-            status TEXT NOT NULL DEFAULT 'waiting', -- 'waiting', 'active', 'finished'
+            status TEXT NOT NULL DEFAULT 'finished', -- 'finished', 'waiting', 'active'
             join_code TEXT,
             UNIQUE(name)
         );
@@ -99,7 +99,6 @@ function getHostDb(hostId) {
     `);
 
     // --- MIGRATIONS ---
-    // Safely adds the new 'answers' column to 'results' if it doesn't exist
     try {
         hostDb.prepare('ALTER TABLE results ADD COLUMN answers TEXT').run();
     } catch (e) {
@@ -107,7 +106,6 @@ function getHostDb(hostId) {
             console.error("DB migration error (results.answers):", e.message);
         }
     }
-    // Safely adds the new 'join_code' column to 'quizzes' if it doesn't exist
     try {
         hostDb.prepare('ALTER TABLE quizzes ADD COLUMN join_code TEXT').run();
     } catch (e) {
@@ -133,10 +131,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // --- EXPRESS ROUTES ---
-// Serve static files from 'public' directory (for images, css, client-side js)
 app.use(express.static(publicDir));
-
-// Serve HTML pages
 app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 app.get('/player', (req, res) => res.sendFile(path.join(publicDir, 'player.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
@@ -166,7 +161,7 @@ app.post('/api/admin/add-host', superAdminAuth, (req, res) => {
         const hash = bcrypt.hashSync(password, SALT_ROUNDS);
         const info = masterDb.prepare('INSERT INTO hosts (email, password, db_path) VALUES (?, ?, ?)')
             .run(email, hash, `databases/host_${Date.now()}.db`);
-        getHostDb(info.lastInsertRowid); // This initializes the new DB file
+        getHostDb(info.lastInsertRowid);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: 'Email already exists.' }); }
 });
@@ -185,7 +180,7 @@ app.post('/api/admin/delete-host', superAdminAuth, (req, res) => {
 const hostAuthMiddleware = (req, res, next) => {
     try {
         const token = req.headers.authorization;
-        const host = masterDb.prepare('SELECT id FROM hosts WHERE id = ?').get(token); // Simple token auth
+        const host = masterDb.prepare('SELECT id FROM hosts WHERE id = ?').get(token);
         if (!host) return res.status(403).json({ success: false, message: 'Forbidden' });
         req.hostId = host.id;
         req.db = getHostDb(host.id);
@@ -208,7 +203,9 @@ app.post('/api/host/quizzes', hostAuthMiddleware, (req, res) => {
 app.post('/api/host/create-quiz', hostAuthMiddleware, (req, res) => {
     try {
         const { name } = req.body;
-        const info = req.db.prepare('INSERT INTO quizzes (name) VALUES (?)').run(name);
+        const joinCode = generateJoinCode();
+        const info = req.db.prepare('INSERT INTO quizzes (name, join_code) VALUES (?, ?)')
+            .run(name, joinCode);
         res.json({ success: true, quizId: info.lastInsertRowid });
     } catch (e) { res.status(500).json({ success: false, message: 'A quiz with this name already exists.' }); }
 });
@@ -222,7 +219,11 @@ app.post('/api/host/quiz-details', hostAuthMiddleware, (req, res) => {
     if (!quiz) return res.status(404).json({ success: false, message: 'Quiz not found'});
 
     const questions = req.db.prepare('SELECT * FROM questions WHERE quiz_id = ? ORDER BY id ASC').all(quizId);
-    const playerCount = (quizState.quizId === parseInt(quizId) && quizState.hostId === req.hostId) ? players.size : 0;
+    
+    let playerCount = 0;
+    if (quizState.quizId === parseInt(quizId) && quizState.hostId === req.hostId) {
+        playerCount = players.size;
+    }
     
     res.json({ success: true, details: { status: quiz.status, joinCode: quiz.join_code, playerCount, questions }});
 });
@@ -245,16 +246,18 @@ app.post('/api/host/delete-question', hostAuthMiddleware, (req, res) => {
     req.db.prepare('DELETE FROM questions WHERE id = ?').run(req.body.id);
     res.json({ success: true });
 });
+
+// "Prepare Quiz"
 app.post('/api/host/start-quiz', hostAuthMiddleware, (req, res) => {
-    // Ensure no other quizzes are active globally
-    if (quizState.status === 'active') return res.json({ success: false, message: 'Another quiz is already active on the server.'});
+    // Ensure no other quizzes are active or waiting globally
+    if (quizState.status === 'active' || quizState.status === 'waiting') {
+        return res.json({ success: false, message: 'Another quiz is already active or waiting.'});
+    }
     
     const { quizId } = req.body;
     
-    // Ensure this host has no other quizzes marked as active
-    req.db.prepare("UPDATE quizzes SET status = 'waiting', join_code = NULL").run();
-    const joinCode = generateJoinCode();
-    req.db.prepare("UPDATE quizzes SET status = 'active', join_code = ? WHERE id = ?").run(joinCode, quizId);
+    // Set this quiz's status to 'waiting' (in lobby)
+    req.db.prepare("UPDATE quizzes SET status = 'waiting' WHERE id = ?").run(quizId);
     
     const quiz = req.db.prepare('SELECT * FROM quizzes WHERE id = ?').get(quizId);
     if (!quiz) return res.json({ success: false, message: 'Quiz not found.' });
@@ -262,71 +265,74 @@ app.post('/api/host/start-quiz', hostAuthMiddleware, (req, res) => {
     quizState.questions = req.db.prepare('SELECT * FROM questions WHERE quiz_id = ? ORDER BY id ASC').all(quizId);
     if (quizState.questions.length === 0) return res.json({ success: false, message: 'This quiz has no questions.'});
     
-    quizState.status = 'active';
+    quizState.status = 'waiting'; // Global state is now 'waiting'
     quizState.hostId = req.hostId;
     quizState.quizId = quizId;
     quizState.quizName = quiz.name;
-    quizState.joinCode = joinCode;
+    quizState.joinCode = quiz.join_code;
     req.db.prepare('DELETE FROM results WHERE quiz_id = ?').run(quizId);
     
-    players.forEach(p => { p.score = 0; p.answers = {}; p.questionIndex = -1; });
-    io.emit('quizStarted', { quizName: quiz.name });
+    players.clear();
     io.emit('leaderboardUpdate', { results: [], quizName: quiz.name });
     res.json({ success: true });
 });
+
+// ** NEW "Launch Quiz" ROUTE **
+app.post('/api/host/launch-quiz', hostAuthMiddleware, (req, res) => {
+    if (quizState.status !== 'waiting' || quizState.hostId !== req.hostId) {
+        return res.json({ success: false, message: 'Quiz is not in a waiting lobby.'});
+    }
+    // Set quiz to active
+    quizState.status = 'active';
+    req.db.prepare("UPDATE quizzes SET status = 'active' WHERE id = ?").run(quizState.quizId);
+    
+    // Broadcast to all players in the lobby
+    io.emit('quizStarted', { quizName: quizState.quizName });
+    res.json({ success: true });
+});
+
+// "End Quiz"
 app.post('/api/host/end-quiz', hostAuthMiddleware, (req, res) => {
-    if (quizState.status !== 'active' || quizState.hostId !== req.hostId) {
-        return res.json({ success: false, message: 'No active quiz for this host.'});
+    if ((quizState.status !== 'active' && quizState.status !== 'waiting') || quizState.hostId !== req.hostId) {
+        return res.json({ success: false, message: 'No quiz is active or waiting for this host.'});
     }
     endQuiz();
     res.json({ success: true });
 });
 
-// ** UPDATED DETAILED RESULTS ROUTE **
 app.get('/api/host/results', hostAuthMiddleware, (req, res) => {
     try {
         const { quizId } = req.query;
         if (!quizId) return res.status(400).send("quizId is required.");
         
-        // Helper function to safely quote CSV fields
         const quote = (val) => {
             const str = (val === null || val === undefined) ? '' : String(val);
-            // Escape double quotes by doubling them
             const escaped = str.replace(/"/g, '""');
-            // Add quotes if the string contains a comma, newline, or double quote
             if (escaped.includes(',') || escaped.includes('\n') || escaped.includes('"')) {
                 return `"${escaped}"`;
             }
             return escaped;
         };
 
-        // 1. Get all questions for this quiz
         const questions = req.db.prepare('SELECT * FROM questions WHERE quiz_id = ? ORDER BY id ASC').all(quizId);
-        
-        // 2. Get all results, including the new 'answers' column
         const results = req.db.prepare('SELECT name, branch, year, score, answers FROM results WHERE quiz_id = ? ORDER BY score DESC').all(quizId);
         
-        // 3. Build CSV Headers
         let headers = ['Name', 'Branch', 'Year', 'Total Score'];
-        // Add each question as a header
         questions.forEach((q, i) => {
             headers.push(`Q${i + 1}: ${q.text}`);
         });
         let csv = headers.map(quote).join(',') + '\n';
 
-        // 4. Build CSV Rows
         results.forEach(r => {
             const playerAnswers = r.answers ? JSON.parse(r.answers) : {};
             let row = [
                 quote(r.name),
                 quote(r.branch),
                 quote(r.year),
-                r.score // Score is a number, no quote needed
+                r.score
             ];
 
-            // Loop through each question to check the player's answer
             questions.forEach(q => {
-                // Find the player's answer for this specific question ID
                 const selectedOptionIndex = playerAnswers[q.id];
                 
                 let answerStatus = 'NO ANSWER';
@@ -351,28 +357,30 @@ app.get('/api/host/results', hostAuthMiddleware, (req, res) => {
 
 // --- QUIZ LOGIC ---
 function endQuiz() {
-    if (quizState.status !== 'active') return;
+    if (quizState.status !== 'active' && quizState.status !== 'waiting') return;
 
     const hostDb = getHostDb(quizState.hostId);
-    hostDb.prepare("UPDATE quizzes SET status = 'waiting', join_code = NULL WHERE id = ?").run(quizState.quizId);
+    hostDb.prepare("UPDATE quizzes SET status = 'finished' WHERE id = ?").run(quizState.quizId);
 
-    quizState.status = 'finished'; // temporary state for players
-    players.forEach((player, socketId) => io.to(socketId).emit('quizFinished', { score: player.score }));
+    if (quizState.status === 'active') { // Only send finish message if quiz was live
+        players.forEach((player, socketId) => io.to(socketId).emit('quizFinished', { score: player.score }));
+    }
     
-    quizState.status = 'waiting';
+    quizState.status = 'finished'; // Use 'finished' to block any lingering joins
     quizState.quizId = null;
     quizState.hostId = null;
     quizState.joinCode = null;
+    players.clear();
 }
 io.on('connection', (socket) => {
     socket.emit('quizState', { status: quizState.status, quizName: quizState.quizName });
     io.emit('playerCount', players.size);
     
-    // ** UPDATED JOIN LOGIC **
+    // ** UPDATED JOIN LOGIC (LOBBY MODEL) **
     socket.on('join', (playerData) => {
-        // 1. Check if a quiz is active
-        if (quizState.status !== 'active') {
-            return socket.emit('error', { message: 'No quiz is active. Please wait for the host.' });
+        // 1. Check if a quiz is in the 'waiting' lobby state
+        if (quizState.status !== 'waiting') {
+            return socket.emit('error', { message: 'The quiz is not ready or has already started.' });
         }
         // 2. Check the join code
         if (playerData.joinCode !== quizState.joinCode) {
@@ -383,12 +391,12 @@ io.on('connection', (socket) => {
             return socket.emit('error', { message: 'This name is already taken for this quiz.' });
         }
         
-        // Add player
+        // Add player to lobby
         players.set(socket.id, { ...playerData, score: 0, answers: {}, questionIndex: -1 });
         io.emit('playerCount', players.size);
 
-        // Immediately send the player into the quiz
-        socket.emit('quizStarted', { quizName: quizState.quizName });
+        // Send player to the waiting room
+        socket.emit('joined', { name: playerData.name });
     });
 
     socket.on('requestNextQuestion', () => {
@@ -418,7 +426,6 @@ io.on('connection', (socket) => {
         player.answers[question.id] = optionIndex;
         socket.emit('answerResult', { isCorrect, scoreChange, correctOptionIndex: question.correctOptionIndex, selectedOptionIndex: optionIndex, score: player.score });
         
-        // ** UPDATED DB QUERY (with 'answers' column) **
         const hostDb = getHostDb(quizState.hostId);
         const answersJson = JSON.stringify(player.answers);
 
