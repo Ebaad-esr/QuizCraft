@@ -82,7 +82,8 @@
                 <input id="year-input" placeholder="Year" class="auth-input mb-6">
                 <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg">Join Quiz</button>
             </form>
-            </div>
+
+        </div>
     </div>
     <div id="waiting-page" class="hide text-center">
         <h1 id="welcome-message" class="text-4xl font-bold mb-4">Welcome!</h1>
@@ -107,18 +108,19 @@
             <div id="question-score-display" class="text-center text-sm text-gray-400 mb-4"></div>
             <img id="question-image" class="my-4 rounded-lg max-h-64 mx-auto hide">
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6"></div>
+            
             <div id="feedback-container" class="hide text-center p-4 rounded-lg bg-black/30">
                 <h3 id="feedback-text" class="text-2xl font-bold"></h3>
                 <p id="feedback-score" class="text-lg"></p>
-                <button id="next-question-btn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded font-bold hide">Next Question</button>
             </div>
+
             <div class="mt-4 text-center text-sm text-gray-400">Your Total Score: <span id="score-display" class="font-bold text-purple-400">0</span></div>
         </main>
     </div>
     <div id="finished-page" class="hide text-center glass-card-form">
         <h1 class="text-4xl font-bold mb-4">Quiz Finished!</h1>
         <p class="text-xl text-gray-300 mb-2">Your Final Score:</p>
-        <p id="final-score" class="text-6xl font-bold text-purple-400 mb-8"></p>
+        <p id="final-score" class="text-6xl font-Gbold text-purple-400 mb-8"></p>
         <a href="/leaderboard" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg">View Leaderboard</a>
     </div>
     <script src="/socket.io/socket.io.js"></script>
