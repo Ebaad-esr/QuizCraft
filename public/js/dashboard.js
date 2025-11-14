@@ -10,7 +10,7 @@ const ui = {
     joinCodeDisplay: document.getElementById("join-code-display"),
     questionsCount: document.getElementById("questions-count-display"),
     startBtn: document.getElementById("start-btn"),
-    launchBtn: document.getElementById("launch-btn"), // <-- ADDED
+    launchBtn: document.getElementById("launch-btn"),
     endBtn: document.getElementById("end-btn"),
     resultsBtn: document.getElementById("results-btn"),
     questionsTable: document.getElementById("questions-table"),
@@ -147,11 +147,16 @@ ui.questionForm.addEventListener("submit", async e => {
 
 // "Prepare Quiz"
 ui.startBtn.addEventListener("click", async () => {
-    await api("start-quiz", { quizId: currentQuizId });
+    // ** FIX: ADDED ERROR HANDLING **
+    const result = await api("start-quiz", { quizId: currentQuizId });
+    if (!result.success) {
+        alert(`Error: ${result.message}`);
+    }
     refreshQuizDetail();
+    // ** END FIX **
 });
 
-// "Launch Quiz" (NEW)
+// "Launch Quiz"
 ui.launchBtn.addEventListener("click", async () => {
     await api("launch-quiz", { quizId: currentQuizId });
     refreshQuizDetail();
