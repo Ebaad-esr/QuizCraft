@@ -136,7 +136,7 @@ socket.on("quizFinished", ({ score }) => {
 });
 
 function submitAnswer(optionIndex) {
-    clearInterval(timerInterval);
+    // clearInterval(timerInterval); // <-- This line is now removed
     ui.optionsContainer.querySelectorAll("button").forEach(btn => btn.disabled = true);
     socket.emit("submitAnswer", { optionIndex });
 }
