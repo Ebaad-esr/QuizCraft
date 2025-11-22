@@ -3,98 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizMaster Pro</title>
+    <title>QuizCraft Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .glass-card-form {
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(12px);
-            border-radius: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        .auth-input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: .75rem 1rem;
-            border-radius: .5rem;
-            color: #fff;
-            transition: all .2s ease;
-        }
+        .glass-card-form { background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(12px); border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1); padding: 2rem; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        .auth-input { width: 100%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: .75rem 1rem; border-radius: .5rem; color: #fff; transition: all .2s ease; }
         .auth-input::placeholder { color: #d1d5db; }
-        .auth-input:focus {
-            outline: none;
-            border-color: rgba(192, 132, 252, 0.8);
-            box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.5);
-        }
+        .auth-input:focus { outline: none; border-color: rgba(192, 132, 252, 0.8); box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.5); }
         .hide { display: none; }
-        .loader {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            height: 60px;
-        }
-        .loader div {
-            width: 10px;
-            height: 10px;
-            margin: 0 4px;
-            background-color: #c084fc;
-            border-radius: 5px;
-            animation: bounce 1.2s infinite ease-in-out;
-        }
-        .loader .bar2 { animation-delay: -.1s; }
-        .loader .bar3 { animation-delay: -.2s; }
-        .loader .bar4 { animation-delay: -.3s; }
-        .loader .bar5 { animation-delay: -.4s; }
-        @keyframes bounce {
-            0%, 40%, 100% { transform: scaleY(.4); }
-            20% { transform: scaleY(1); }
-        }
+        .loader { display: flex; justify-content: center; align-items: flex-end; height: 60px; }
+        .loader div { width: 10px; height: 10px; margin: 0 4px; background-color: #c084fc; border-radius: 5px; animation: bounce 1.2s infinite ease-in-out; }
+        .loader .bar2 { animation-delay: -.1s; } .loader .bar3 { animation-delay: -.2s; } .loader .bar4 { animation-delay: -.3s; } .loader .bar5 { animation-delay: -.4s; }
+        @keyframes bounce { 0%, 40%, 100% { transform: scaleY(.4); } 20% { transform: scaleY(1); } }
     </style>
 </head>
 <body class="bg-gray-900 text-white bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 min-h-screen flex items-center justify-center p-4">
     <header class="fixed top-0 left-0 right-0 flex justify-between items-center bg-black/30 p-4 backdrop-blur-sm z-10">
         <a href="/" class="flex items-center cursor-pointer">
-            <svg class="w-8 h-8 text-purple-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-            </svg>
-            <h1 id="quiz-title-display" class="text-xl md:text-2xl font-bold truncate">QuizMaster Pro</h1>
+            <h1 id="quiz-title-display" class="text-xl md:text-2xl font-bold truncate text-yellow-400">QuizCraft</h1>
         </a>
         <div id="player-count-display" class="font-semibold">Players: 0</div>
     </header>
     <div id="join-page" class="w-full max-w-md">
         <div class="glass-card-form">
             <div class="text-center mb-6">
-                <svg class="w-16 h-16 mx-auto text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
-                </svg>
-                <h2 class="text-3xl font-bold mt-2">Join a Quiz</h2>
+                <h2 class="text-3xl font-bold mt-2 text-yellow-400">Join QuizCraft</h2>
             </div>
             <p id="join-error" class="bg-red-500/80 text-white text-center p-2 rounded-md mb-4 hide"></p>
-            
             <form id="join-form">
                 <input id="name-input" placeholder="Your Name *" class="auth-input mb-4" required>
                 <input id="joincode-input" placeholder="Join Code *" class="auth-input mb-4" required style="text-transform: uppercase;">
                 <input id="branch-input" placeholder="Branch" class="auth-input mb-4">
                 <input id="year-input" placeholder="Year" class="auth-input mb-6">
-                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg">Join Quiz</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 to-orange-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg text-black">Join Quiz</button>
             </form>
-
         </div>
     </div>
     <div id="waiting-page" class="hide text-center">
         <h1 id="welcome-message" class="text-4xl font-bold mb-4">Welcome!</h1>
-        <p id="waiting-text" class="text-xl text-gray-300 mb-8">Waiting for the host to start the quiz...</p>
-        <div class="loader">
-            <div class="bar1"></div>
-            <div class="bar2"></div>
-            <div class="bar3"></div>
-            <div class="bar4"></div>
-            <div class="bar5"></div>
-        </div>
+        <p id="waiting-text" class="text-xl text-gray-300 mb-8">Waiting for the host to launch the quiz...</p>
+        <div class="loader"><div class="bar1"></div><div class="bar2"></div><div class="bar3"></div><div class="bar4"></div><div class="bar5"></div></div>
     </div>
     <div id="quiz-page" class="hide w-full max-w-4xl pt-16">
         <main class="glass-card-form p-6 md:p-8">
@@ -108,20 +57,18 @@
             <div id="question-score-display" class="text-center text-sm text-gray-400 mb-4"></div>
             <img id="question-image" class="my-4 rounded-lg max-h-64 mx-auto hide">
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6"></div>
-            
             <div id="feedback-container" class="hide text-center p-4 rounded-lg bg-black/30">
                 <h3 id="feedback-text" class="text-2xl font-bold"></h3>
                 <p id="feedback-score" class="text-lg"></p>
             </div>
-
-            <div class="mt-4 text-center text-sm text-gray-400">Your Total Score: <span id="score-display" class="font-bold text-purple-400">0</span></div>
+            <div class="mt-4 text-center text-sm text-gray-400">Your Total Score: <span id="score-display" class="font-bold text-yellow-400">0</span></div>
         </main>
     </div>
     <div id="finished-page" class="hide text-center glass-card-form">
         <h1 class="text-4xl font-bold mb-4">Quiz Finished!</h1>
         <p class="text-xl text-gray-300 mb-2">Your Final Score:</p>
-        <p id="final-score" class="text-6xl font-Gbold text-purple-400 mb-8"></p>
-        <a href="/leaderboard" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg">View Leaderboard</a>
+        <p id="final-score" class="text-6xl font-bold text-yellow-400 mb-8"></p>
+        <a href="/leaderboard" class="w-full bg-gradient-to-r from-yellow-500 to-orange-600 p-3 rounded-lg font-bold text-lg transition-all shadow-lg text-black">View Leaderboard</a>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/player.js"></script>
