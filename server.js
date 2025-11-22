@@ -160,17 +160,6 @@ app.post('/api/host/login', (req, res) => {
     if (host && bcrypt.compareSync(password, host.password)) res.json({ success: true, token: host.id });
     else res.json({ success: false, message: 'Invalid credentials' });
 });
-app.post('/api/host/register', (req, res) => {
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required.' });
-        const hash = bcrypt.hashSync(password, SALT_ROUNDS);
-        const info = masterDb.prepare('INSERT INTO hosts (email, password, db_path) VALUES (?, ?, ?)')
-            .run(email, hash, `databases/host_${Date.now()}.db`);
-        getHostDb(info.lastInsertRowid);
-        res.json({ success: true, token: info.lastInsertRowid });
-    } catch (e) { res.status(500).json({ success: false, message: 'Email already exists.' }); }
-});
 
 app.post('/api/host/quizzes', hostAuthMiddleware, (req, res) => {
     const quizzes = req.db.prepare('SELECT * FROM quizzes ORDER BY id DESC').all();
