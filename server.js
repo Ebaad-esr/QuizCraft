@@ -13,30 +13,20 @@ const multer = require('multer');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 
-// --- GOOGLE AUTH SETUP ---
-const { OAuth2Client } = require('google-auth-library');
-// REPLACE WITH YOUR ACTUAL CLIENT ID IF DIFFERENT
-const GOOGLE_CLIENT_ID = "940602400844-sio5kjileikdatta0n4e5b93uc30s2gh.apps.googleusercontent.com";
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '3gbup38id9'; // Use Env var in production if possible
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '3gbup38id9'; 
 const SALT_ROUNDS = 10;
 
-// --- DIRECTORY SETUP (UPDATED FOR RAILWAY) ---
-// Railway Volume mount path usually defaults to /app/data or user defined
+// --- DIRECTORY SETUP ---
 const RAILWAY_MOUNT = process.env.RAILWAY_VOLUME_MOUNT_PATH; 
 const RENDER_MOUNT = process.env.RENDER_DISK_MOUNT_PATH;
-
-// If on Railway or Render, use the mount path. Otherwise local.
 const dataPath = RAILWAY_MOUNT || RENDER_MOUNT || __dirname;
 
 const publicDir = path.join(__dirname, 'public');
 const uploadsDir = path.join(dataPath, 'uploads');
 const dbDir = path.join(dataPath, 'databases');
 
-// Ensure directories exist
 [uploadsDir, dbDir].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
@@ -65,7 +55,7 @@ function getHostDb(hostId) {
     const host = masterDb.prepare('SELECT db_path FROM hosts WHERE id = ?').get(hostId);
     if (!host) throw new Error('Host not found');
     
-    const dbPath = path.join(dataPath, path.basename(host.db_path)); // Ensure we look in dataPath
+    const dbPath = path.join(dataPath, path.basename(host.db_path));
     const hostDb = new Database(dbPath);
     hostDb.pragma('foreign_keys = ON');
     hostDb.exec(`
@@ -100,7 +90,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- EXPRESS ROUTES ---
 app.use(express.static(publicDir));
-// Serve uploaded images from the persistent path
 app.use('/uploads', express.static(uploadsDir)); 
 
 app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
@@ -183,33 +172,6 @@ app.post('/api/host/register', (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: 'Email already exists.' }); }
 });
 
-// ** GOOGLE LOGIN **
-app.post('/api/host/google-login', async (req, res) => {
-    try {
-        const { token } = req.body;
-        const ticket = await googleClient.verifyIdToken({
-            idToken: token,
-            audience: GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        const email = payload.email;
-
-        let host = masterDb.prepare('SELECT * FROM hosts WHERE email = ?').get(email);
-
-        if (!host) {
-            const dummyPassword = bcrypt.hashSync("GOOGLE_AUTH_USER_" + Date.now(), SALT_ROUNDS);
-            const info = masterDb.prepare('INSERT INTO hosts (email, password, db_path) VALUES (?, ?, ?)')
-                .run(email, dummyPassword, `databases/host_${Date.now()}.db`);
-            getHostDb(info.lastInsertRowid);
-            host = { id: info.lastInsertRowid };
-        }
-        res.json({ success: true, token: host.id });
-    } catch (e) {
-        console.error(e);
-        res.json({ success: false, message: 'Google authentication failed' });
-    }
-});
-
 app.post('/api/host/quizzes', hostAuthMiddleware, (req, res) => {
     const quizzes = req.db.prepare('SELECT * FROM quizzes ORDER BY id DESC').all();
     res.json({ success: true, quizzes });
@@ -262,7 +224,7 @@ app.post('/api/host/edit-question', hostAuthMiddleware, upload.single('questionI
 app.post('/api/host/delete-question', hostAuthMiddleware, (req, res) => {
     const question = req.db.prepare('SELECT imageUrl FROM questions WHERE id = ?').get(req.body.id);
     if (question && question.imageUrl) {
-        const imagePath = path.join(uploadsDir, path.basename(question.imageUrl)); // Use uploadsDir
+        const imagePath = path.join(uploadsDir, path.basename(question.imageUrl)); 
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
     req.db.prepare('DELETE FROM questions WHERE id = ?').run(req.body.id);
