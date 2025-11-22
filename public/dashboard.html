@@ -46,18 +46,22 @@
             </div>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold mb-4">Question Manager</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold" id="question-form-title">Add New Question</h2>
+                <button id="cancel-edit-btn" class="text-sm text-red-500 underline hide">Cancel Edit</button>
+            </div>
             <form id="question-form" class="bg-gray-50 p-6 rounded-lg border">
+                <input type="hidden" name="questionId" id="edit-question-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <textarea name="text" placeholder="Question Text" class="p-2 border rounded w-full md:col-span-2" required></textarea>
-                    <input name="options" placeholder="Options (comma separated)" class="p-2 border rounded w-full md:col-span-2" required>
-                    <input name="correctOptionIndex" type="number" min="0" placeholder="Correct Index (0-based)" class="p-2 border rounded w-full" required>
-                    <input name="timeLimit" type="number" min="1" placeholder="Time (s)" class="p-2 border rounded w-full" value="30">
-                    <input name="score" type="number" min="0" placeholder="Points" class="p-2 border rounded w-full" value="10">
-                    <input name="negativeScore" type="number" min="0" placeholder="Negative Points" class="p-2 border rounded w-full" value="0">
-                    <input name="questionImage" type="file" accept="image/*" class="p-2 border rounded w-full md:col-span-2">
+                    <textarea name="text" id="q-text" placeholder="Question Text" class="p-2 border rounded w-full md:col-span-2" required></textarea>
+                    <input name="options" id="q-options" placeholder="Options (comma separated)" class="p-2 border rounded w-full md:col-span-2" required>
+                    <input name="correctOptionIndex" id="q-correct" type="number" min="0" placeholder="Correct Index (0-based)" class="p-2 border rounded w-full" required>
+                    <input name="timeLimit" id="q-time" type="number" min="1" placeholder="Time (s)" class="p-2 border rounded w-full" value="30">
+                    <input name="score" id="q-score" type="number" min="0" placeholder="Points" class="p-2 border rounded w-full" value="10">
+                    <input name="negativeScore" id="q-neg" type="number" min="0" placeholder="Negative Points" class="p-2 border rounded w-full" value="0">
+                    <input name="questionImage" id="q-img" type="file" accept="image/*" class="p-2 border rounded w-full md:col-span-2">
                 </div>
-                <button type="submit" class="mt-4 bg-black text-white px-5 py-2 rounded font-semibold hover:bg-gray-800">Add Question</button>
+                <button type="submit" id="save-question-btn" class="mt-4 bg-black text-white px-5 py-2 rounded font-semibold hover:bg-gray-800">Add Question</button>
             </form>
             <h3 class="text-xl font-bold mt-8 mb-4">Existing Questions</h3>
             <div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="p-3">ID</th><th class="p-3">Text</th><th class="p-3">Image</th><th class="p-3">Actions</th></tr></thead><tbody id="questions-table"></tbody></table></div>
