@@ -54,7 +54,15 @@ socket.on("question", ({ question, index }) => {
         ui.timerDisplay.textContent = `${timeLeft}s`;
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            if (!ui.optionsContainer.querySelector('button:disabled')) submitAnswer(null);
+            // If user hasn't answered yet, submit null (timeout)
+            if (!ui.optionsContainer.querySelector('button:disabled')) {
+                submitAnswer(null);
+            }
+            // ** AUTO-ADVANCE LOGIC **
+            // Wait 1.2 seconds so they see "Time Up" or feedback, then move on.
+            setTimeout(() => {
+                socket.emit("requestNextQuestion");
+            }, 1200);
         }
     }, 1000);
 });
@@ -65,6 +73,13 @@ socket.on("answerResult", ({ isCorrect, scoreChange, correctOptionIndex, selecte
     ui.nextQuestionBtn.focus();
     ui.feedbackText.textContent = isCorrect ? "CORRECT!" : "WRONG!";
     ui.feedbackText.className = isCorrect ? "text-3xl font-black mb-2 text-green-500" : "text-3xl font-black mb-2 text-red-500";
+    
+    // Customize message for Timeout (0 score change)
+    if (selectedOptionIndex === null) {
+        ui.feedbackText.textContent = "TIME UP!";
+        ui.feedbackText.className = "text-3xl font-black mb-2 text-yellow-500";
+    }
+
     ui.feedbackScore.textContent = `SCORE: ${scoreChange > 0 ? "+" : ""}${scoreChange}`;
     ui.optionsContainer.querySelectorAll("button").forEach((button, index) => {
         if (index === correctOptionIndex) { button.style.backgroundColor = "rgba(22, 163, 74, 0.8)"; button.style.borderColor = "#22c55e"; }
@@ -76,7 +91,7 @@ socket.on("answerResult", ({ isCorrect, scoreChange, correctOptionIndex, selecte
 socket.on("quizFinished", ({ score }) => { ui.finalScore.textContent = score; showPage("finished-page"); });
 
 function submitAnswer(optionIndex) {
-    // Timer logic removed from here so it keeps running
+    // Timer continues running per previous request, but buttons are disabled
     ui.optionsContainer.querySelectorAll("button").forEach(btn => btn.disabled = true);
     socket.emit("submitAnswer", { optionIndex });
 }
